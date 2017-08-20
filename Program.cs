@@ -23,7 +23,6 @@ namespace ImageConverter
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(OnCurrentDomain_UnhandledException);
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
             }
-
             Application.Run(new FormImageConvert());
         }
 

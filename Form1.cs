@@ -69,12 +69,22 @@ namespace ImageConverter
                 return;
             }
 
+            var files = System.IO.Directory.GetFiles(textBoxFolder.Text).ToList();
 
-            var files = System.IO.Directory.GetFiles(textBoxFolder.Text);
+            Type officeType = Type.GetTypeFromProgID("Powerpoint.Application");
+            if (officeType == null)
+            {
+                var exts = files.Select(f => Path.GetExtension(f));
+                if (exts.Any(x => x.Equals(".pptx", StringComparison.InvariantCultureIgnoreCase) || x.Equals(".ppt", StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    MessageBox.Show(this, "Powerpoint is niet geinstalled of gevonden. .ppt or .pptx bestanden worden niet gebruikt", "Alert");
+                    files = files.Where(x => !(x.Equals(".pptx", StringComparison.InvariantCultureIgnoreCase) || x.Equals(".ppt", StringComparison.InvariantCultureIgnoreCase))).ToList();
+                }               
+            }
 
             if (files.Count() < 1)
             {
-                MessageBox.Show(this, "No Files in folder");
+                MessageBox.Show(this, "Geen (geldige) bestanden gevonden");
                 return;
             }
 
@@ -96,7 +106,7 @@ namespace ImageConverter
         }   
 
         CancellationTokenSource tokenSource = new CancellationTokenSource();
-        private async void ConvertFiles(string[] files, string outputDir)
+        private async void ConvertFiles(IEnumerable<string> files, string outputDir)
         {
             var logoPath = this.logoSelecter1.GetLogoPath();
             var location = this.logoSelecter1.LogoLocation();

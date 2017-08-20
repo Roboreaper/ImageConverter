@@ -36,6 +36,21 @@ namespace ImageConverter
             }          
         }
 
+
+        private void buttonSelectLogo_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Multiselect = false;
+            ofd.Title = "Select an image to use as logo";
+            ofd.Filter = "Image files (*.jpg, *.jpeg, *.png, *.bmp) | *.jpg; *.jpeg; *.png; *.bmp";
+
+            if(ofd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.logoSelecter1.SetLogoPath(ofd.FileName);
+            }
+        }
+
+
         bool converting = false;
         private void buttonConvert_Click(object sender, EventArgs e)
         {
@@ -73,7 +88,7 @@ namespace ImageConverter
             textBoxInfo.Text = "";
             textBoxInfo.Text = "Start Conversion..." + Environment.NewLine;            
 
-            ConvertFiles(files);
+            ConvertFiles(files, textBoxFolder.Text);
 
             buttonConvert.Text = "Convert";
             converting = false;
@@ -81,10 +96,19 @@ namespace ImageConverter
         }   
 
         CancellationTokenSource tokenSource = new CancellationTokenSource();
-        private async void ConvertFiles(string[] files)
-        {          
+        private async void ConvertFiles(string[] files, string outputDir)
+        {
+            var logoPath = this.logoSelecter1.GetLogoPath();
+            var location = this.logoSelecter1.LogoLocation();
+
             await Task.Run(() =>
             {
+                Image logo = null;
+                if (!string.IsNullOrWhiteSpace(logoPath) && File.Exists(logoPath))
+                {
+                    logo = Image.FromFile(logoPath);
+                }
+
                 var backup = Path.Combine(System.IO.Path.GetDirectoryName(files.First()), "Backup");
                 try
                 {
@@ -108,13 +132,20 @@ namespace ImageConverter
                             continue; // ignore this file
                     }
 
-                    ImageTools.ConvertFromFile(backup,file, InfoMessage);
+                    if (logoPath == file)
+                        continue;
+
+                    ImageTools.ConvertFromFile(backup,file, logo, location, InfoMessage);
                     UpdateProgressBar();                   
-                }              
-                
+                }
+
+                logo?.Dispose();
+
+                System.Diagnostics.Process.Start(outputDir);
+
             }, tokenSource.Token);
 
-            InfoMessage("Conversion Finised.");
+            InfoMessage("Conversion Finised.");           
            
         }
 
@@ -142,5 +173,7 @@ namespace ImageConverter
                 textBoxInfo.Refresh();
             }
         }
+
+     
     }
 }

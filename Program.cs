@@ -18,7 +18,6 @@ namespace ImageConverter
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-
             if (!Debugger.IsAttached)
             {
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(OnCurrentDomain_UnhandledException);
@@ -30,7 +29,7 @@ namespace ImageConverter
 
         private static void OnCurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            MessageBox.Show("Something went wrong.\r\n" + e.ExceptionObject.ToString());
+            MessageBox.Show($"Something went wrong.\r\n Stack:{  Environment.StackTrace}\r\n Ex:" + e.ExceptionObject.ToString());          
         }
     }
 }

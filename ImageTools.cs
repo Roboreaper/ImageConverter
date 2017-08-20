@@ -15,7 +15,7 @@ namespace ImageConverter
 {
     public class ImageTools
     {
-        public static void ConvertFromFile(string backup, string path, Action<string> errorMessage)
+        public static void ConvertFromFile(string backup, string path, Image logo, eLogoLocation location, Action<string> errorMessage)
         {        
             if (System.IO.File.Exists(path))
             {
@@ -42,7 +42,7 @@ namespace ImageConverter
                                 i++;
                                 errorMessage($"Converting Slide {i}");
 
-                                var temp = Path.Combine(dir, $"temp{ Number2String(i)}.png");
+                                var temp = Path.Combine(dir, $"temp{i}.png");
                                 try
                                 {
                                     item.Export(temp, "png");
@@ -70,19 +70,28 @@ namespace ImageConverter
 
                                     Negate(negated);
 
-                                    var add = ImageTools.Number2String(i);
+                                    var add = $"({i})";
                                     string f = Path.GetFileNameWithoutExtension(path);
                                     var newpath = path.Replace(f, f + add);
 
                                     newpath = System.IO.Path.ChangeExtension(newpath, "png");
 
-                                    negated.Save(newpath, System.Drawing.Imaging.ImageFormat.Png);
+                                    if (File.Exists(newpath))
+                                        File.Delete(newpath);
 
+                                   // negated.Save(newpath, System.Drawing.Imaging.ImageFormat.Png);
+                                    SaveImage(newpath, negated, logo, location);
                                 }
                                 catch (Exception Ex)
                                 {
                                     errorMessage($"Could not invert slide {i}");
                                     System.Diagnostics.Trace.TraceError(Ex.Message);
+                                                                                        
+                                    continue;
+                                }
+                                finally
+                                {
+                                    negated?.Dispose();
 
                                     try
                                     {
@@ -91,13 +100,7 @@ namespace ImageConverter
                                     catch (Exception e)
                                     {
                                         errorMessage(e.Message);
-                                    }                                 
-                                    continue;
-                                }
-                                finally
-                                {
-                                    negated?.Dispose();
-                                 
+                                    }
                                 }                                
                             }                            
                         }
@@ -144,8 +147,8 @@ namespace ImageConverter
 
                         BackupFile(backup, path, errorMessage);
 
-                        negated.Save(newPath, System.Drawing.Imaging.ImageFormat.Png);
-
+                        //negated.Save(newPath, System.Drawing.Imaging.ImageFormat.Png);
+                        SaveImage(newPath, negated, logo, location);
                     }
                     catch (Exception e)
                     {
@@ -157,6 +160,58 @@ namespace ImageConverter
                     }                    
                 }              
             }            
+        }     
+
+
+        private static void SaveImage(string path, Bitmap img, Image logo, eLogoLocation location)
+        {
+            if (logo != null)
+            {
+                using (var g = Graphics.FromImage(img))
+                {
+                    switch (location)
+                    {
+                        default:
+                        case eLogoLocation.TopLeft:
+                            g.DrawImage(logo, 0, 0, logo.Width, logo.Height);
+                            break;
+                        case eLogoLocation.BottomLeft:
+                            {
+                                var y = img.Height - logo.Height;
+                                if (y < 0)
+                                    y = 0;
+
+                                g.DrawImage(logo, 0, y, logo.Width, logo.Height);
+                            }
+                            break;
+                        case eLogoLocation.TopRight:
+                            {
+                                var x = img.Width - logo.Width;
+                                if (x < 0)
+                                    x = 0;
+
+                                g.DrawImage(logo, x, 0, logo.Width, logo.Height);
+                            }
+                            break;
+                        case eLogoLocation.BottomRight:
+                            {
+                                var x = img.Width - logo.Width;
+                                if (x < 0)
+                                    x = 0;
+
+                                var y = img.Height - logo.Height;
+                                if (y < 0)
+                                    y = 0;
+
+                                g.DrawImage(logo, x, y, logo.Width, logo.Height);
+                            }
+                            break;                        
+                    }                   
+                }
+            }
+
+           img.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+
         }
 
         private static void BackupFile(string backup, string file, Action<string> infoMsg)
@@ -167,12 +222,10 @@ namespace ImageConverter
                 int i = 1;
                 while (File.Exists(newpath))
                 {
-                    var add = ImageTools.Number2String(i);
-
+                    var add = $"[{i}]";
                     string f = Path.GetFileNameWithoutExtension(file);
-                    newpath = file.Replace(f, f + add);
-
-                    //newpath = Path.Combine(backup, Path.GetFileName(file));
+                    newpath = newpath.Replace(f, f + add);
+                   
                     i++;
                 }
 
@@ -187,12 +240,14 @@ namespace ImageConverter
         }
 
 
-        public static String Number2String(int number, bool isCaps = false)
-        {
-            Char c = (Char)((isCaps ? 65 : 97) + (number - 1));
+        //public static String Number2String(int number, bool isCaps = false)
+        //{         
+        //    Char c = (Char)((isCaps ? 65 : 97) + (number - 1));
 
-            return c.ToString();
-        }
+        //    return c.ToString();
+        //}
+
+
 
         private static void Negate(Bitmap image)
         {           
